@@ -6,8 +6,7 @@
 trigger:
   branches:
     include:
-      - master
-      - 202205
+      - accton-as5822
   paths:
     exclude:
       - .github
