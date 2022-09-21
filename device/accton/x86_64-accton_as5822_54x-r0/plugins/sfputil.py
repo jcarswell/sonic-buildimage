@@ -2,15 +2,15 @@
 #
 # Platform-specific SFP transceiver interface for SONiC
 #
+
 try:
     import time
-    import os
+    import string
     from ctypes import create_string_buffer
     from sonic_sfp.sfputilbase import SfpUtilBase
 except ImportError as e:
     raise ImportError("%s - required module not found" % str(e))
 
-# from xcvrd
 SFP_STATUS_INSERTED = '1'
 SFP_STATUS_REMOVED = '0'
 
@@ -19,81 +19,95 @@ class SfpUtil(SfpUtilBase):
     """Platform-specific SfpUtil class"""
 
     PORT_START = 1
-    PORT_END = 54
-    PORTS_IN_BLOCK = 54
+    PORT_END = 72
+    PORTS_IN_BLOCK = 72
     QSFP_PORT_START = 49
-    QSFP_PORT_END = 54
+    QSFP_PORT_END = 72
 
     BASE_VAL_PATH = "/sys/class/i2c-adapter/i2c-{0}/{1}-0050/"
-    BASE_OOM_PATH = "/sys/bus/i2c/devices/{0}-0050/"
-    BASE_CPLD2_PATH = "/sys/bus/i2c/devices/{0}-0061/"
-    BASE_CPLD3_PATH = "/sys/bus/i2c/devices/{0}-0062/"
-    I2C_BUS_ORDER = -1
-
-    # The sidebands of QSFP is different.
-    # present is in-order.
-    # But lp_mode and reset are not.
-    qsfp_sb_map = [0, 2, 4, 1, 3, 5]
 
     _port_to_is_present = {}
     _port_to_lp_mode = {}
 
     _port_to_eeprom_mapping = {}
+    _cpld_mapping = {
+        0:  "6-0060",
+        1:  "10-0061",
+        2:  "11-0062",
+    }
     _port_to_i2c_mapping = {
-        1:  [1, 2],
-        2:  [2, 3],
-        3:  [3, 4],
-        4:  [4, 5],
-        5:  [5, 6],
-        6:  [6, 7],
-        7:  [7, 8],
-        8:  [8, 9],
-        9:  [9, 10],
-        10:  [10, 11],
-        11:  [11, 12],
-        12:  [12, 13],
-        13:  [13, 14],
-        14:  [14, 15],
-        15:  [15, 16],
-        16:  [16, 17],
-        17:  [17, 18],
-        18:  [18, 19],
-        19:  [19, 20],
-        20:  [20, 21],
-        21:  [21, 22],
-        22:  [22, 23],
-        23:  [23, 24],
-        24:  [24, 25],
-        25:  [25, 26],
-        26:  [26, 27],
-        27:  [27, 28],
-        28:  [28, 29],
-        29:  [29, 30],
-        30:  [30, 31],
-        31:  [31, 32],
-        32:  [32, 33],
-        33:  [33, 34],
-        34:  [34, 35],
-        35:  [35, 36],
-        36:  [36, 37],
-        37:  [37, 38],
-        38:  [38, 39],
-        39:  [39, 40],
-        40:  [40, 41],
-        41:  [41, 42],
-        42:  [42, 43],
-        43:  [43, 44],
-        44:  [44, 45],
-        45:  [45, 46],
-        46:  [46, 47],
-        47:  [47, 48],
-        48:  [48, 49],
-        49:  [49, 50],  # QSFP_start
-        50:  [51, 52],
-        51:  [53, 54],
-        52:  [50, 51],
-        53:  [52, 53],
-        54:  [54, 55],
+        1: 18,
+        2: 19,
+        3: 20,
+        4: 21,
+        5: 22,
+        6: 23,
+        7: 24,
+        8: 25,
+        9: 26,
+        10: 27,
+        11: 28,
+        12: 29,
+        13: 30,
+        14: 31,
+        15: 32,
+        16: 33,
+        17: 34,
+        18: 35,
+        19: 36,
+        20: 37,
+        21: 38,
+        22: 39,
+        23: 40,
+        24: 41,
+        25: 42,
+        26: 43,
+        27: 44,
+        28: 45,
+        29: 46,
+        30: 47,
+        31: 48,
+        32: 49,
+        33: 50,
+        34: 51,
+        35: 52,
+        36: 53,
+        37: 54,
+        38: 55,
+        39: 56,
+        40: 57,
+        41: 58,
+        42: 59,
+        43: 60,
+        44: 61,
+        45: 62,
+        46: 63,
+        47: 64,
+        48: 65,
+        49: 66, # QSFP49
+        50: 66,
+        51: 66,
+        52: 66,
+        53: 67, # QSFP50
+        54: 67,
+        55: 67,
+        56: 67,
+        57: 68, # QSFP51
+        58: 68,
+        59: 68,
+        60: 68,
+        61: 69, # QSFP52
+        62: 69,
+        63: 69,
+        64: 69,
+        65: 70, # QSFP53
+        66: 70,
+        67: 70,
+        68: 70,
+        69: 71, # QSFP54
+        70: 71,
+        71: 71,
+        72: 71,
     }
 
     @property
@@ -121,42 +135,42 @@ class SfpUtil(SfpUtilBase):
         return self._port_to_eeprom_mapping
 
     def __init__(self):
-        eeprom_path = self.BASE_OOM_PATH + "eeprom"
-
+        eeprom_path = '/sys/bus/i2c/devices/{0}-0050/eeprom'
         for x in range(self.port_start, self.port_end+1):
             self.port_to_eeprom_mapping[x] = eeprom_path.format(
-                self._port_to_i2c_mapping[x][1]
-            )
+                self._port_to_i2c_mapping[x])
+
         SfpUtilBase.__init__(self)
 
-    # Two i2c buses might get flipped order, check them both.
-    def update_i2c_order(self):
-        if self.I2C_BUS_ORDER < 0:
-            eeprom_path = "/sys/bus/i2c/devices/1-0057/eeprom"
-            if os.path.exists(eeprom_path):
-                self.I2C_BUS_ORDER = 0
-            eeprom_path = "/sys/bus/i2c/devices/0-0057/eeprom"
-            if os.path.exists(eeprom_path):
-                self.I2C_BUS_ORDER = 1
-        return self.I2C_BUS_ORDER
+    # For port 49~54 are QSFP, here presumed they're all split to 4 lanes.
+
+    def get_cage_num(self, port_num):
+        cage_num = port_num
+        if (port_num >= self.QSFP_PORT_START):
+            cage_num = (port_num - self.QSFP_PORT_START)/4
+            cage_num = int(cage_num + self.QSFP_PORT_START)
+
+        return cage_num
+
+    # For cage 1~38 are at cpld2, others are at cpld3.
+    def get_cpld_num(self, port_num):
+        return 1 if (port_num < 39) else 2
 
     def get_presence(self, port_num):
         # Check for invalid port_num
         if port_num < self.port_start or port_num > self.port_end:
             return False
 
-        order = self.update_i2c_order()
-        if port_num <= 24:
-            present_path = self.BASE_CPLD2_PATH.format(order)
-        else:
-            present_path = self.BASE_CPLD3_PATH.format(order)
+        cage_num = self.get_cage_num(port_num)
+        cpld_i = self.get_cpld_num(port_num)
 
-        present_path = present_path + "module_present_" + str(port_num)
-        self.__port_to_is_present = present_path
+        cpld_ps = self._cpld_mapping[cpld_i]
+        path = "/sys/bus/i2c/devices/{0}/module_present_{1}"
+        port_ps = path.format(cpld_ps, cage_num)
 
         content = "0"
         try:
-            val_file = open(self.__port_to_is_present)
+            val_file = open(port_ps)
             content = val_file.readline().rstrip()
             val_file.close()
         except IOError as e:
@@ -168,30 +182,25 @@ class SfpUtil(SfpUtilBase):
 
         return False
 
-    def qsfp_sb_remap(self, port_num):
-        qsfp_start = self.qsfp_port_start
-        qsfp_index = port_num - qsfp_start
-        qsfp_index = self.qsfp_sb_map[qsfp_index]
-        return qsfp_start+qsfp_index
-
     def get_low_power_mode_cpld(self, port_num):
         if port_num < self.qsfp_port_start or port_num > self.qsfp_port_end:
             return False
 
-        order = self.update_i2c_order()
-        lp_mode_path = self.BASE_CPLD3_PATH.format(order)
-        lp_mode_path = lp_mode_path + "module_lp_mode_"
-        q = self.qsfp_sb_remap(port_num)
-        lp_mode_path = lp_mode_path + str(q)
+        cage_num = self.get_cage_num(port_num)
+        cpld_i = self.get_cpld_num(port_num)
 
-        content = "0"
+        cpld_ps = self._cpld_mapping[cpld_i]
+        path = "/sys/bus/i2c/devices/{0}/module_lpmode_{1}"
+        lp_mode_path = path.format(cpld_ps, cage_num)
+
         try:
             val_file = open(lp_mode_path)
-            content = val_file.readline().rstrip()
-            val_file.close()
         except IOError as e:
             print("Error: unable to open file: %s" % str(e))
             return False
+
+        content = val_file.readline().rstrip()
+        val_file.close()
 
         if content == "1":
             return True
@@ -203,12 +212,12 @@ class SfpUtil(SfpUtilBase):
             return False
 
         if not self.get_presence(port_num):
-            return self.get_low_power_mode_cpld(port_num)
+            return False
 
         try:
             eeprom = None
 
-            eeprom = open(self.port_to_eeprom_mapping[port_num], "rb")
+            eeprom = open(self.port_to_eeprom_mapping[port_num], mode="rb", buffering=0)
             eeprom.seek(93)
             lpmode = ord(eeprom.read(1))
 
@@ -219,8 +228,8 @@ class SfpUtil(SfpUtilBase):
                     return True  # Low Power Mode if "Power set" bit is 1
                 else:
                     return False  # High Power Mode if "Power set" bit is 0
-        except IOError as err:
-            print("Error: unable to open file: %s" % str(err))
+        except IOError as e:
+            print("Error: unable to open file: %s" % str(e))
             return False
         finally:
             if eeprom is not None:
@@ -243,12 +252,12 @@ class SfpUtil(SfpUtilBase):
             buffer[0] = chr(regval)
 
             # Write to eeprom
-            eeprom = open(self.port_to_eeprom_mapping[port_num], "r+b")
+            eeprom = open(self.port_to_eeprom_mapping[port_num], mode="r+b", buffering=0)
             eeprom.seek(93)
             eeprom.write(buffer[0])
             return True
-        except IOError as err:
-            print("Error: unable to open file: %s" % str(err))
+        except IOError as e:
+            print("Error: unable to open file: %s" % str(e))
             return False
         finally:
             if eeprom is not None:
@@ -259,14 +268,13 @@ class SfpUtil(SfpUtilBase):
         if port_num < self.qsfp_port_start or port_num > self.qsfp_port_end:
             return False
 
-        order = self.update_i2c_order()
-        lp_mode_path = self.BASE_CPLD3_PATH.format(order)
-        mod_rst_path = lp_mode_path + "module_reset_"
-        q = self.qsfp_sb_remap(port_num)
-        mod_rst_path = mod_rst_path + str(q)
-
+        cage_num = self.get_cage_num(port_num)
+        cpld_i = self.get_cpld_num(port_num)
+        cpld_ps = self._cpld_mapping[cpld_i]
+        path = "/sys/bus/i2c/devices/{0}/module_reset_{1}"
+        port_ps = path.format(cpld_ps, cage_num)
         try:
-            reg_file = open(mod_rst_path, 'r+', buffering=0)
+            reg_file = open(port_ps, mode='w', buffering=0)
         except IOError as e:
             print("Error: unable to open file: %s" % str(e))
             return False
@@ -278,17 +286,14 @@ class SfpUtil(SfpUtilBase):
         reg_file.seek(0)
         reg_file.write('1')
         reg_file.close()
+
         return True
 
     @property
     def _get_presence_bitmap(self):
         nodes = []
-        order = self.update_i2c_order()
-
-        present_path = self.BASE_CPLD2_PATH.format(order)
-        nodes.append(present_path + "module_present_all")
-        present_path = self.BASE_CPLD3_PATH.format(order)
-        nodes.append(present_path + "module_present_all")
+        nodes.append("/sys/bus/i2c/devices/10-0061/module_present_all")
+        nodes.append("/sys/bus/i2c/devices/11-0062/module_present_all")
 
         bitmap = ""
         for node in nodes:
@@ -302,43 +307,78 @@ class SfpUtil(SfpUtilBase):
             reg_file.close()
 
         rev = bitmap.split(" ")
+        rev.pop()  # Remove the last useless character
+
+        # Convert bitmap into continuously port order
+        rev[4] = hex((int(rev[4], 16) | ((int(rev[5], 16) & 0x3) << 6)))[2:]      # Port 33-40
+        rev[5] = hex((int(rev[5], 16) >> 2) | ((int(rev[6], 16) & 0x3) << 6))[2:]  # Port 41-48
+
+        # Expand port 49-54
+        tmp = rev.pop()
+        for i in range(2, 8):
+            val = (int(tmp, 16) >> i) & 0x1
+            rev.append(hex(val)[2:])
+
+        for i in range(0, 6):
+            rev[i] = rev[i].zfill(2)
+
         rev = "".join(rev[::-1])
         return int(rev, 16)
 
-    data = {'valid': 0, 'last': 0, 'present': 0}
+    data = {'valid': 0, 'present': 0}
 
-    def get_transceiver_change_event(self, timeout=2000):
-        now = time.time()
+    def get_transceiver_change_event(self, timeout=0):
+
+        start_time = time.time()
         port_dict = {}
         port = 0
+        blocking = False
 
-        if timeout < 1000:
-            timeout = 1000
-        timeout = (timeout) / float(1000)  # Convert to secs
-
-        if now < (self.data['last'] + timeout) and self.data['valid']:
-            return True, {}
-
-        reg_value = self._get_presence_bitmap
-        changed_ports = self.data['present'] ^ reg_value
-        if changed_ports:
-            for port in range(self.port_start, self.port_end+1):
-                # Mask off the bit corresponding to our port
-                fp_port = self._port_to_i2c_mapping[port][0]
-                mask = (1 << (fp_port - 1))
-                if changed_ports & mask:
-
-                    if (reg_value & mask) == 0:
-                        port_dict[port] = SFP_STATUS_REMOVED
-                    else:
-                        port_dict[port] = SFP_STATUS_INSERTED
-
-            # Update cache
-            self.data['present'] = reg_value
-            self.data['last'] = now
-            self.data['valid'] = 1
-
-            return True, port_dict
+        if timeout == 0:
+            blocking = True
+        elif timeout > 0:
+            timeout = timeout / float(1000)  # Convert to secs
         else:
-            return True, {}
+            print("get_transceiver_change_event:Invalid timeout value", timeout)
+            return False, {}
+
+        end_time = start_time + timeout
+        if start_time > end_time:
+            print('get_transceiver_change_event:'
+                  'time wrap / invalid timeout value', timeout)
+
+            return False, {}  # Time wrap or possibly incorrect timeout
+
+        while timeout >= 0:
+            # Check for OIR events and return updated port_dict
+
+            reg_value = self._get_presence_bitmap
+            changed_ports = self.data['present'] ^ reg_value
+            if changed_ports:
+                for port in range(self.port_start, self.port_end+1):
+                    # Mask off the bit corresponding to our port
+                    mask = (1 << (port - 1))
+                    if changed_ports & mask:
+
+                        if (reg_value & mask) == 0:
+                            port_dict[port] = SFP_STATUS_REMOVED
+                        else:
+                            port_dict[port] = SFP_STATUS_INSERTED
+
+                # Update cache
+                self.data['present'] = reg_value
+                self.data['valid'] = 1
+                return True, port_dict
+
+            if blocking:
+                time.sleep(1)
+            else:
+                timeout = end_time - time.time()
+                if timeout >= 1:
+                    time.sleep(1)  # We poll at 1 second granularity
+                else:
+                    if timeout > 0:
+                        time.sleep(timeout)
+                    return True, {}
+        print("get_transceiver_change_event: Should not reach here.")
         return False, {}
