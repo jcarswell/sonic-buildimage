@@ -157,22 +157,26 @@ class ControlPlaneAclManager(daemon_base.DaemonBase):
 
             self.config_db_map[front_asic_namespace] = swsscommon.ConfigDBConnector(use_unix_socket_path=True, namespace=front_asic_namespace)
             self.config_db_map[front_asic_namespace].connect()
-            self.iptables_cmd_ns_prefix[front_asic_namespace] = "ip netns exec " + front_asic_namespace + " "
-            self.namespace_docker_mgmt_ip[front_asic_namespace] = self.get_namespace_mgmt_ip(self.iptables_cmd_ns_prefix[front_asic_namespace],
-                                                                                              front_asic_namespace)
-            self.namespace_docker_mgmt_ipv6[front_asic_namespace] = self.get_namespace_mgmt_ipv6(self.iptables_cmd_ns_prefix[front_asic_namespace],
-                                                                                              front_asic_namespace)
+            self.update_docker_mgmt_ip_acl(front_asic_namespace)
 
         for back_asic_namespace in namespaces['back_ns']:
             self.update_thread[back_asic_namespace] = None
             self.lock[back_asic_namespace] = threading.Lock()
             self.num_changes[back_asic_namespace] = 0
+            self.update_docker_mgmt_ip_acl(back_asic_namespace)
+       
+        for fabric_asic_namespace in namespaces['fabric_ns']:
+            self.update_thread[fabric_asic_namespace] = None
+            self.lock[fabric_asic_namespace] = threading.Lock()
+            self.num_changes[fabric_asic_namespace] = 0
+            self.update_docker_mgmt_ip_acl(fabric_asic_namespace)
 
-            self.iptables_cmd_ns_prefix[back_asic_namespace] = "ip netns exec " + back_asic_namespace + " "
-            self.namespace_docker_mgmt_ip[back_asic_namespace] = self.get_namespace_mgmt_ip(self.iptables_cmd_ns_prefix[back_asic_namespace],
-                                                                                             back_asic_namespace)
-            self.namespace_docker_mgmt_ipv6[back_asic_namespace] = self.get_namespace_mgmt_ipv6(self.iptables_cmd_ns_prefix[back_asic_namespace],
-                                                                                             back_asic_namespace)
+    def update_docker_mgmt_ip_acl(self, namespace):
+            self.iptables_cmd_ns_prefix[namespace] = "ip netns exec " + namespace + " "
+            self.namespace_docker_mgmt_ip[namespace] = self.get_namespace_mgmt_ip(self.iptables_cmd_ns_prefix[namespace],
+                                                                                             namespace)
+            self.namespace_docker_mgmt_ipv6[namespace] = self.get_namespace_mgmt_ipv6(self.iptables_cmd_ns_prefix[namespace],
+                                                                                             namespace)
 
     def get_namespace_mgmt_ip(self, iptable_ns_cmd_prefix, namespace):
         ip_address_get_command = iptable_ns_cmd_prefix + "ip -4 -o addr show " + ("eth0" if namespace else "docker0") +\
@@ -351,27 +355,28 @@ class ControlPlaneAclManager(daemon_base.DaemonBase):
                 nat_source_ipv6_set = acl_source_ip_map[acl_service]["ipv6"] if acl_source_ip_map and acl_source_ip_map[acl_service]["ipv6"] else { "::/0" }
 
                 for ip_protocol in self.ACL_SERVICES[acl_service]["ip_protocols"]:
-                    for dst_port in  self.ACL_SERVICES[acl_service]["dst_ports"]: 
-                        for ipv4_src_ip in nat_source_ipv4_set:
-                            # IPv4 rules
-                            fwd_traffic_from_namespace_to_host_cmds.append(self.iptables_cmd_ns_prefix[namespace] +
-                                                               "iptables -t nat -A PREROUTING -p {} -s {} --dport {}  -j DNAT --to-destination {}".format
-                                                               (ip_protocol, ipv4_src_ip, dst_port,
-                                                                self.namespace_mgmt_ip))
-                            fwd_traffic_from_namespace_to_host_cmds.append(self.iptables_cmd_ns_prefix[namespace] +
-                                                               "iptables -t nat -A POSTROUTING -p {} -s {} --dport {} -j SNAT --to-source {}".format
-                                                               (ip_protocol, ipv4_src_ip, dst_port,
-                                                                self.namespace_docker_mgmt_ip[namespace]))
-                        for ipv6_src_ip in nat_source_ipv6_set:
-                            # IPv6 rules
-                            fwd_traffic_from_namespace_to_host_cmds.append(self.iptables_cmd_ns_prefix[namespace] +
-                                                               "ip6tables -t nat -A PREROUTING -p {} -s {} --dport {}  -j DNAT --to-destination {}".format
-                                                               (ip_protocol, ipv6_src_ip, dst_port,
-                                                                self.namespace_mgmt_ipv6))
-                            fwd_traffic_from_namespace_to_host_cmds.append(self.iptables_cmd_ns_prefix[namespace] +
-                                                               "ip6tables -t nat -A POSTROUTING -p {} -s {} --dport {} -j SNAT --to-source {}".format
-                                                               (ip_protocol,ipv6_src_ip, dst_port,
-                                                                self.namespace_docker_mgmt_ipv6[namespace]))
+                    if "dst_ports" in self.ACL_SERVICES[acl_service]:
+                        for dst_port in  self.ACL_SERVICES[acl_service]["dst_ports"]: 
+                            for ipv4_src_ip in nat_source_ipv4_set:
+                                # IPv4 rules
+                                fwd_traffic_from_namespace_to_host_cmds.append(self.iptables_cmd_ns_prefix[namespace] +
+                                                                   "iptables -t nat -A PREROUTING -p {} -s {} --dport {}  -j DNAT --to-destination {}".format
+                                                                   (ip_protocol, ipv4_src_ip, dst_port,
+                                                                    self.namespace_mgmt_ip))
+                                fwd_traffic_from_namespace_to_host_cmds.append(self.iptables_cmd_ns_prefix[namespace] +
+                                                                   "iptables -t nat -A POSTROUTING -p {} -s {} --dport {} -j SNAT --to-source {}".format
+                                                                   (ip_protocol, ipv4_src_ip, dst_port,
+                                                                    self.namespace_docker_mgmt_ip[namespace]))
+                            for ipv6_src_ip in nat_source_ipv6_set:
+                                # IPv6 rules
+                                fwd_traffic_from_namespace_to_host_cmds.append(self.iptables_cmd_ns_prefix[namespace] +
+                                                                   "ip6tables -t nat -A PREROUTING -p {} -s {} --dport {}  -j DNAT --to-destination {}".format
+                                                                   (ip_protocol, ipv6_src_ip, dst_port,
+                                                                    self.namespace_mgmt_ipv6))
+                                fwd_traffic_from_namespace_to_host_cmds.append(self.iptables_cmd_ns_prefix[namespace] +
+                                                                   "ip6tables -t nat -A POSTROUTING -p {} -s {} --dport {} -j SNAT --to-source {}".format
+                                                                   (ip_protocol,ipv6_src_ip, dst_port,
+                                                                    self.namespace_docker_mgmt_ipv6[namespace]))
 
         return fwd_traffic_from_namespace_to_host_cmds
 
