@@ -55,7 +55,7 @@ class FanUtil(object):
 
     """ Dictionary where
         key1 = fan id index (integer) starting from 1
-        key2 = fan node index (interger) starting from 1
+        key2 = fan node index (integer) starting from 1
         value = path to fan device file (string) """
     _fan_to_device_path_mapping = {}
 

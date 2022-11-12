@@ -48,7 +48,7 @@ class FanUtil(object):
 
     """ Dictionary where
         key1 = fan id index (integer) starting from 1
-        key2 = fan node index (interger) starting from 1
+        key2 = fan node index (integer) starting from 1
         value = path to fan device file (string) """
     _fan_device_path_mapping = {}
     
@@ -104,7 +104,7 @@ class FanUtil(object):
             return None
 
         try:
-		    val_file.close()
+            val_file.close()
         except IOError:
             logging.debug('GET. unable to close file. device_path:%s', device_path)
             return None
@@ -135,7 +135,7 @@ class FanUtil(object):
         val_file.write(content)
 
         try:
-		    val_file.close()
+            val_file.close()
         except BaseException:
             logging.debug('GET. unable to close file. device_path:%s', device_path)
             return None
