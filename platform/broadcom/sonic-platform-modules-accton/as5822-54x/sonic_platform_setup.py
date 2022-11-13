@@ -5,7 +5,7 @@ HW_SKU = 'x86_64-accton_as5822_54x-r0'
 
 setup(
     name='sonic-platform',
-    version='0.1',
+    version='1.0',
     description='SONiC platform API implementation on Accton Platforms',
     license='Apache 2.0',
     author='SONiC Team',
