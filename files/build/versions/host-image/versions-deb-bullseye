@@ -67,8 +67,8 @@ gpg-wks-client==2.2.27-2+deb11u2
 gpg-wks-server==2.2.27-2+deb11u2
 gpgconf==2.2.27-2+deb11u2
 gpgsm==2.2.27-2+deb11u2
-grub-common==2.06-3~deb11u1
-grub2-common==2.06-3~deb11u1
+grub-common==2.06-3~deb11u4
+grub2-common==2.06-3~deb11u4
 haveged==1.9.14-1
 hdparm==9.60+ds-1
 hping3==3.a2.ds2-10
@@ -236,8 +236,8 @@ libpcre3-dev==2:8.39-13
 libpcre32-3==2:8.39-13
 libpcrecpp0v5==2:8.39-13
 libperl5.32==5.32.1-4+deb11u2
-libpixman-1-0==0.40.0-1
-libpixman-1-dev==0.40.0-1
+libpixman-1-0==0.40.0-1.1~deb11u1
+libpixman-1-dev==0.40.0-1.1~deb11u1
 libpng-dev==1.6.37-3
 libpng16-16==1.6.37-3
 libpopt0==1.18-2
