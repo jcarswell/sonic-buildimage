@@ -43,6 +43,9 @@ build:
 		$(PYTHON3) $${mod}/setup.py build; \
 		cd $(MOD_SRC_DIR)/$${mod}; \
 		if [ -f sonic_platform_setup.py ]; then \
+			if [ $$mod = "as5822-54x" ]; then \
+				mkdir $(MOD_SRC_DIR)/../../../device/accton/x86_64-accton_as5835_54x-r0/sonic_platform; \
+			fi; \
 			$(PYTHON3) sonic_platform_setup.py bdist_wheel -d $(MOD_SRC_DIR)/$${mod}; \
 			echo "Finished making wheel package for $$mod"; \
 		fi; \
