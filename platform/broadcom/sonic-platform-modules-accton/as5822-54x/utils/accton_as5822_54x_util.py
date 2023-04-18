@@ -67,17 +67,18 @@ i2c_nodes = {"fan": ["present", "front_speed_rpm", "rear_speed_rpm"] ,
            "psu": ["psu_present ", "psu_power_good"]    ,
            "sfp": ["module_present_", "module_tx_disable_"]}
 """
-sfp_map =  list(range(1 + 17, 52 + 17))
+sfp_map =  list(range(1 + 17, 55 + 17))
 
-qsfp_start = 48
+qsfp_start = 49
 
 #For sideband signals of SFP/QSFP modules.
-cpld_of_module = {"10-0061": list(range(0, 38)),
-                  "11-0062": list(range(38, 54)) }
+cpld_of_module = {"10-0061": list(range(0, 29)),
+                  "11-0062": list(range(30, 49)),
+                  "6-0060":  list(range(49, 55))}
 
 mknod =[
 "echo pca9548 0x72 > /sys/bus/i2c/devices/i2c-0/new_device",
-"echo pca9548 0x71 > /sys/bus/i2c/devices/i2c-1/new_device" ,
+"echo pca9548 0x70 > /sys/bus/i2c/devices/i2c-1/new_device",
 "echo pca9548 0x71 > /sys/bus/i2c/devices/i2c-12/new_device" ,
 "echo pca9548 0x72 > /sys/bus/i2c/devices/i2c-13/new_device" ,
 "echo pca9548 0x73 > /sys/bus/i2c/devices/i2c-14/new_device",
@@ -85,26 +86,22 @@ mknod =[
 "echo pca9548 0x75 > /sys/bus/i2c/devices/i2c-16/new_device",
 "echo pca9548 0x76 > /sys/bus/i2c/devices/i2c-17/new_device",
 "echo pca9548 0x71 > /sys/bus/i2c/devices/i2c-17/new_device",
-#"*echo pca9548 0x75 > /sys/bus/i2c/devices/i2c-38/new_device",
-#"*echo pca9548 0x76 > /sys/bus/i2c/devices/i2c-39/new_device",
-"echo 24c02 0x57 > /sys/bus/i2c/devices/i2c-1/new_device",
-
-#"*echo as5822_54x_fan 0x63 > /sys/bus/i2c/devices/i2c-3/new_device",
+"echo as5822_54x_cpld1 0x60 > /sys/bus/i2c/devices/i2c-6/new_device" ,
+"echo as5822_54x_cpld2 0x61 > /sys/bus/i2c/devices/i2c-10/new_device" ,
+"echo as5822_54x_cpld3 0x62 > /sys/bus/i2c/devices/i2c-11/new_device" ,
+"echo as5822_54x_psu1 0x50 > /sys/bus/i2c/devices/i2c-3/new_device" ,
+"echo ym2401 0x58 > /sys/bus/i2c/devices/i2c-3/new_device",
+"echo as5822_54x_psu2 0x51 > /sys/bus/i2c/devices/i2c-4/new_device",
+"echo ym2401 0x59 > /sys/bus/i2c/devices/i2c-4/new_device",
 "echo lm75 0x48 > /sys/bus/i2c/devices/i2c-7/new_device",
 "echo lm75 0x49 > /sys/bus/i2c/devices/i2c-8/new_device",
 "echo lm75 0x4a > /sys/bus/i2c/devices/i2c-9/new_device",
 "echo lm75 0x4b > /sys/bus/i2c/devices/i2c-9/new_device",
-"echo as5822_54x_psu1 0x50 > /sys/bus/i2c/devices/i2c-3/new_device",
-"echo ym2401 0x58 > /sys/bus/i2c/devices/i2c-3/new_device",
-"echo as5822_54x_psu2 0x51 > /sys/bus/i2c/devices/i2c-4/new_device",
-"echo ym2401 0x59 > /sys/bus/i2c/devices/i2c-4/new_device",
-"echo as5822_54x_cpld1 0x60 > /sys/bus/i2c/devices/i2c-6/new_device",
-"echo as5822_54x_cpld2 0x61 > /sys/bus/i2c/devices/i2c-10/new_device",
-"echo as5822_54x_cpld3 0x62 > /sys/bus/i2c/devices/i2c-11/new_device"]
+"echo 24c02 0x57 > /sys/bus/i2c/devices/i2c-1/new_device"]
 
 mknod2 =[
-"echo pca9548 0x72 > /sys/bus/i2c/devices/i2c-0/new_device",
-"echo pca9548 0x71 > /sys/bus/i2c/devices/i2c-1/new_device" ,
+"echo pca9548 0x70 > /sys/bus/i2c/devices/i2c-0/new_device",
+"echo pca9548 0x72 > /sys/bus/i2c/devices/i2c-1/new_device",
 "echo pca9548 0x71 > /sys/bus/i2c/devices/i2c-12/new_device" ,
 "echo pca9548 0x72 > /sys/bus/i2c/devices/i2c-13/new_device" ,
 "echo pca9548 0x73 > /sys/bus/i2c/devices/i2c-14/new_device",
@@ -112,23 +109,18 @@ mknod2 =[
 "echo pca9548 0x75 > /sys/bus/i2c/devices/i2c-16/new_device",
 "echo pca9548 0x76 > /sys/bus/i2c/devices/i2c-17/new_device",
 "echo pca9548 0x71 > /sys/bus/i2c/devices/i2c-17/new_device",
-#"echo pca9548 0x75 > /sys/bus/i2c/devices/i2c-38/new_device",
-#"echo pca9548 0x76 > /sys/bus/i2c/devices/i2c-39/new_device",
-"echo 24c02 0x57 > /sys/bus/i2c/devices/i2c-0/new_device",
-
-#"*echo as5822_54x_fan 0x63 > /sys/bus/i2c/devices/i2c-3/new_device",
+"echo as5822_54x_cpld1 0x60 > /sys/bus/i2c/devices/i2c-6/new_device" ,
+"echo as5822_54x_cpld2 0x61 > /sys/bus/i2c/devices/i2c-10/new_device" ,
+"echo as5822_54x_cpld3 0x62 > /sys/bus/i2c/devices/i2c-11/new_device" ,
+"echo as5822_54x_psu1 0x50 > /sys/bus/i2c/devices/i2c-3/new_device" ,
+"echo ym2401 0x58 > /sys/bus/i2c/devices/i2c-3/new_device",
+"echo as5822_54x_psu2 0x51 > /sys/bus/i2c/devices/i2c-4/new_device",
+"echo ym2401 0x59 > /sys/bus/i2c/devices/i2c-4/new_device",
 "echo lm75 0x48 > /sys/bus/i2c/devices/i2c-7/new_device",
 "echo lm75 0x49 > /sys/bus/i2c/devices/i2c-8/new_device",
 "echo lm75 0x4a > /sys/bus/i2c/devices/i2c-9/new_device",
 "echo lm75 0x4b > /sys/bus/i2c/devices/i2c-9/new_device",
-"echo as5822_54x_psu1 0x50 > /sys/bus/i2c/devices/i2c-3/new_device",
-"echo ym2401 0x58 > /sys/bus/i2c/devices/i2c-3/new_device",
-"echo as5822_54x_psu2 0x51 > /sys/bus/i2c/devices/i2c-4/new_device",
-"echo ym2401 0x59 > /sys/bus/i2c/devices/i2c-4/new_device",
-"echo as5822_54x_cpld1 0x60 > /sys/bus/i2c/devices/i2c-6/new_device",
-"echo as5822_54x_cpld2 0x61 > /sys/bus/i2c/devices/i2c-10/new_device",
-"echo as5822_54x_cpld3 0x62 > /sys/bus/i2c/devices/i2c-11/new_device"]
-
+"echo 24c02 0x57 > /sys/bus/i2c/devices/i2c-0/new_device"]
 
 
 if DEBUG == True:
@@ -246,9 +238,9 @@ def i2c_order_check():
     tmp = "i2cget -y -f 0 0x72"
     ret = log_os_system(tmp, 0)
     if not ret[0]:
-        order = 1
-    else:
         order = 0
+    else:
+        order = 1
     return order
 
 
@@ -290,14 +282,14 @@ def device_install():
         if FORCE == 0:
             return status
 
-    for i in range(49, 55): #Set qsfp port to normal state
-        log_os_system("echo 0 > /sys/bus/i2c/devices/11-0062/module_reset_" + str(i), 1)
-    for i in range(1, 39): #Set disable tx_disable to sfp port
+    for i in range(1, 29): #Set disable tx_disable to sfp port
         log_os_system("echo 0 > /sys/bus/i2c/devices/10-0061/module_tx_disable_" + str(i),
                       1)
-    for i in range(39, 49): #Set disable tx_disable to sfp port
+    for i in range(30, 49): #Set disable tx_disable to sfp port
         log_os_system("echo 0 > /sys/bus/i2c/devices/11-0062/module_tx_disable_" + str(i),
                       1)
+    for i in range(49, 55): #Set qsfp port to normal state
+        log_os_system("echo 0 > /sys/bus/i2c/devices/6-0060/module_reset_" + str(i), 1)
 
     for i in range(0,len(sfp_map)):
         if i < qsfp_start:
@@ -444,7 +436,7 @@ def do_uninstall():
 
 
 def device_exist():
-    ret1 = log_os_system("ls "+i2c_prefix+"*0077", 0)
+    ret1 = log_os_system("ls "+i2c_prefix+"*0072", 0)
     ret2 = log_os_system("ls "+i2c_prefix+"i2c-12", 0)
     return not(ret1[0] or ret2[0])
 
