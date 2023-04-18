@@ -48,11 +48,12 @@ def get_ip_from_interface_table(table, intf_name):
             if not _ip_prefix_in_key(key):
                 continue
 
+
             iface_name, iface_cidr = key
             if iface_name.startswith(intf_name):
-                ip_ntwrk = ipaddress.ip_network(iface_cidr, strict=False)
-                if isinstance(ip_ntwrk, ipaddress.IPv4Network):
-                    ip_addr = ip_ntwrk.network_address
+                ip_str = iface_cidr.split("/")[0]
+                ip_addr = ipaddress.ip_address(ip_str)
+                if isinstance(ip_addr, ipaddress.IPv4Address):
                     return ip_addr
 
     return None
@@ -75,6 +76,7 @@ class ControlPlaneAclManager(daemon_base.DaemonBase):
     MUX_CABLE_TABLE = "MUX_CABLE_TABLE"
     CONFIG_MUX_CABLE = "MUX_CABLE"
     LOOPBACK_TABLE = "LOOPBACK_INTERFACE"
+    VLAN_INTF_TABLE = "VLAN_INTERFACE"
 
     ACL_TABLE_TYPE_CTRLPLANE = "CTRLPLANE"
 
@@ -189,7 +191,7 @@ class ControlPlaneAclManager(daemon_base.DaemonBase):
                                  " | awk '{print $4}' | cut -d'/' -f1 | head -1"
         return self.run_commands([ipv6_address_get_command])
 
-    def run_commands(self, commands):
+    def run_commands(self, commands, ignore_error=False):
         """
         Given a list of shell commands, run them in order
         Args:
@@ -200,7 +202,7 @@ class ControlPlaneAclManager(daemon_base.DaemonBase):
 
             (stdout, stderr) = proc.communicate()
 
-            if proc.returncode != 0:
+            if proc.returncode != 0 and not ignore_error:
                 self.log_error("Error running command '{}'".format(cmd))
             elif stdout:
                 return stdout.rstrip('\n')
@@ -273,6 +275,15 @@ class ControlPlaneAclManager(daemon_base.DaemonBase):
 
         return block_ip2me_cmds
 
+    def check_chassis_midplane_interface_exist(self):
+        return self.run_commands(["ip link show" + " | grep -w 'eth1-midplane'" ], ignore_error=True)
+
+    def generate_allow_internal_chasis_midplane_traffic(self, namespace):
+        if not namespace and self.check_chassis_midplane_interface_exist():
+            return ["iptables -A INPUT -i eth1-midplane -j ACCEPT"]
+        else:
+            return []
+
     def generate_allow_internal_docker_ip_traffic_commands(self, namespace):
         allow_internal_docker_ip_cmds = []
 
@@ -318,6 +329,9 @@ class ControlPlaneAclManager(daemon_base.DaemonBase):
             loopback_table = self.config_db_map[DEFAULT_NAMESPACE].get_table(self.LOOPBACK_TABLE)
             loopback_name = 'Loopback3'
             loopback_address = get_ip_from_interface_table(loopback_table, loopback_name)
+            vlan_name = 'Vlan'
+            vlan_table = self.config_db_map[DEFAULT_NAMESPACE].get_table(self.VLAN_INTF_TABLE)
+            vlan_address = get_ip_from_interface_table(vlan_table, vlan_name)
             fwd_dualtor_grpc_traffic_from_host_to_soc_cmds.append(self.iptables_cmd_ns_prefix[namespace] + 
                     "iptables -t nat --flush POSTROUTING")
             
@@ -328,7 +342,7 @@ class ControlPlaneAclManager(daemon_base.DaemonBase):
                     kvp = mux_table.get(key)
                     if 'cable_type' in kvp and kvp['cable_type'] == 'active-active':
                         fwd_dualtor_grpc_traffic_from_host_to_soc_cmds.append(self.iptables_cmd_ns_prefix[namespace] + 
-                                "iptables -t nat -A POSTROUTING --destination {} -j SNAT --to-source {}".format(kvp['soc_ipv4'], loopback_address))
+                                "iptables -t nat -A POSTROUTING --destination {} --source {} -j SNAT --to-source {}".format(kvp['soc_ipv4'], vlan_address, loopback_address))
 
         return fwd_dualtor_grpc_traffic_from_host_to_soc_cmds
 
@@ -356,7 +370,7 @@ class ControlPlaneAclManager(daemon_base.DaemonBase):
 
                 for ip_protocol in self.ACL_SERVICES[acl_service]["ip_protocols"]:
                     if "dst_ports" in self.ACL_SERVICES[acl_service]:
-                        for dst_port in  self.ACL_SERVICES[acl_service]["dst_ports"]: 
+                        for dst_port in  self.ACL_SERVICES[acl_service]["dst_ports"]:
                             for ipv4_src_ip in nat_source_ipv4_set:
                                 # IPv4 rules
                                 fwd_traffic_from_namespace_to_host_cmds.append(self.iptables_cmd_ns_prefix[namespace] +
@@ -523,6 +537,9 @@ class ControlPlaneAclManager(daemon_base.DaemonBase):
 
         # Add iptables commands to allow internal docker traffic
         iptables_cmds += self.generate_allow_internal_docker_ip_traffic_commands(namespace)
+
+        # Add iptables commands to allow internal chasiss midplane traffic
+        iptables_cmds += self.generate_allow_internal_chasis_midplane_traffic(namespace)
 
         # Add iptables/ip6tables commands to allow all incoming packets from established
         # connections or new connections which are related to established connections

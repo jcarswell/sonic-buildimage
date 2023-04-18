@@ -9,10 +9,6 @@ LOCKFILE="/tmp/swss-syncd-lock$DEV"
 NAMESPACE_PREFIX="asic"
 ETC_SONIC_PATH="/etc/sonic/"
 
-# DEPENDENT initially contains namespace independent services
-# namespace specific services are added later in this script.
-DEPENDENT="radv"
-MULTI_INST_DEPENDENT="teamd"
 
 . /usr/local/bin/asic_status.sh
 
@@ -64,7 +60,8 @@ function check_warm_boot()
 
 function check_fast_boot()
 {
-    if [[ $($SONIC_DB_CLI STATE_DB GET "FAST_REBOOT|system") == "1" ]]; then
+    SYSTEM_FAST_REBOOT=`sonic-db-cli STATE_DB hget "FAST_RESTART_ENABLE_TABLE|system" enable`
+    if [[ x"${SYSTEM_FAST_REBOOT}" == x"true" ]]; then
         FAST_BOOT="true"
     else
         FAST_BOOT="false"
@@ -288,8 +285,8 @@ stop() {
     # encountered error, e.g. syncd crashed. And swss needs to
     # be restarted.
     if [[ x"$FAST_BOOT" != x"true" ]]; then
-        debug "Clearing FAST_REBOOT flag..."
-        clean_up_tables STATE_DB "'FAST_REBOOT*'"
+        debug "Clearing FAST_RESTART_ENABLE_TABLE flag..."
+        sonic-db-cli STATE_DB hset "FAST_RESTART_ENABLE_TABLE|system" "enable" "false"
     fi
     # Unlock has to happen before reaching out to peer service
     unlock_service_state_change
@@ -299,8 +296,6 @@ stop() {
 
 function check_peer_gbsyncd()
 {
-    PLATFORM=`$SONIC_DB_CLI CONFIG_DB hget 'DEVICE_METADATA|localhost' platform`
-    HWSKU=`$SONIC_DB_CLI CONFIG_DB hget 'DEVICE_METADATA|localhost' hwsku`
     GEARBOX_CONFIG=/usr/share/sonic/device/$PLATFORM/$HWSKU/$DEV/gearbox_config.json
 
     if [ -f $GEARBOX_CONFIG ]; then
@@ -310,7 +305,7 @@ function check_peer_gbsyncd()
 
 function check_macsec()
 {
-    MACSEC_STATE=`show feature status | grep macsec | awk '{print $2}'`
+    MACSEC_STATE=`$SONIC_DB_CLI CONFIG_DB hget 'FEATURE|macsec' state`
 
     if [[ ${MACSEC_STATE} == 'enabled' ]]; then
         if [ "$DEV" ]; then
@@ -320,6 +315,22 @@ function check_macsec()
         fi
     fi
 }
+
+function check_ports_present()
+{
+    PORT_CONFIG_INI=/usr/share/sonic/device/$PLATFORM/$HWSKU/$DEV/port_config.ini
+    HWSKU_JSON=/usr/share/sonic/device/$PLATFORM/$HWSKU/$DEV/hwsku.json
+
+    if [[ -f $PORT_CONFIG_INI ]] || [[ -f $HWSKU_JSON ]]; then
+         return 0
+    fi
+    return 1
+}
+
+# DEPENDENT initially contains namespace independent services
+# namespace specific services are added later in this script.
+DEPENDENT="radv"
+MULTI_INST_DEPENDENT=""
 
 if [ "$DEV" ]; then
     NET_NS="$NAMESPACE_PREFIX$DEV" #name of the network namespace
@@ -331,8 +342,19 @@ else
     DEPENDENT+=" bgp"
 fi
 
+PLATFORM=`$SONIC_DB_CLI CONFIG_DB hget 'DEVICE_METADATA|localhost' platform`
+HWSKU=`$SONIC_DB_CLI CONFIG_DB hget 'DEVICE_METADATA|localhost' hwsku`
+
 check_peer_gbsyncd
 check_macsec
+
+check_ports_present
+PORTS_PRESENT=$?
+
+if [[ $PORTS_PRESENT == 0 ]]; then
+    MULTI_INST_DEPENDENT="teamd"
+fi
+
 read_dependent_services
 
 case "$1" in

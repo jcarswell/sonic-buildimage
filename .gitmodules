@@ -23,6 +23,7 @@
 [submodule "sonic-dbsyncd"]
 	path = src/sonic-dbsyncd
 	url = https://github.com/sonic-net/sonic-dbsyncd
+	branch = 202205
 [submodule "src/sonic-py-swsssdk"]
 	path = src/sonic-py-swsssdk
 	url = https://github.com/sonic-net/sonic-py-swsssdk.git
@@ -80,10 +81,7 @@
 	url = https://github.com/sonic-net/sonic-mgmt-framework
 [submodule "src/sonic-telemetry"]
 	path = src/sonic-telemetry
-	url = https://github.com/sonic-net/sonic-telemetry
-[submodule "Switch-SDK-drivers"]
-	path = platform/mellanox/sdk-src/sx-kernel/Switch-SDK-drivers
-	url = https://github.com/Mellanox/Switch-SDK-drivers
+	url = https://github.com/sonic-net/sonic-gnmi
 [submodule "src/sonic-ztp"]
 	path = src/sonic-ztp
 	url = https://github.com/sonic-net/sonic-ztp

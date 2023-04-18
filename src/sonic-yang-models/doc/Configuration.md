@@ -18,12 +18,14 @@ Table of Contents
          * [Buffer port ingress profile list](#buffer-port-ingress-profile-list)  
          * [Buffer port egress profile list](#buffer-port-egress-profile-list)  
          * [Cable length](#cable-length)  
+         * [Chassis module](#chassis-module)         
          * [COPP_TABLE](#copp_table)  
          * [CRM](#crm)  
          * [Data Plane L3 Interfaces](#data-plane-l3-interfaces)  
          * [DEFAULT_LOSSLESS_BUFFER_PARAMETER](#DEFAULT_LOSSLESS_BUFFER_PARAMETER)  
          * [Device Metadata](#device-metadata)  
-         * [Device neighbor metada](#device-neighbor-metada)  
+         * [Device neighbor metada](#device-neighbor-metada)
+         * [DHCP_RELAY](#dhcp_relay)
          * [DSCP_TO_TC_MAP](#dscp_to_tc_map)  
          * [FLEX_COUNTER_TABLE](#flex_counter_table)  
          * [KDUMP](#kdump)
@@ -43,6 +45,7 @@ Table of Contents
          * [Scheduler](#scheduler)  
          * [Port QoS Map](#port-qos-map)  
          * [Queue](#queue)  
+         * [Sflow](#sflow)  
          * [Tacplus Server](#tacplus-server)    
          * [TC to Priority group map](#tc-to-priority-group-map)  
          * [TC to Queue map](#tc-to-queue-map)    
@@ -54,10 +57,11 @@ Table of Contents
          * [Virtual router](#virtual-router)  
          * [WRED_PROFILE](#wred_profile)  
          * [PASSWORD_HARDENING](#password_hardening)
+         * [RADIUS](#radius)
    * [For Developers](#for-developers)  
       * [Generating Application Config by Jinja2 Template](#generating-application-config-by-jinja2-template)
       * [Incremental Configuration by Subscribing to ConfigDB](#incremental-configuration-by-subscribing-to-configdb)
-
+ 
 
 
 # Introduction																																									
@@ -629,6 +633,24 @@ This kind of profiles will be handled by buffer manager and won't be applied to 
 }
 
 ```
+### Chassis Module
+
+CHASSIS_MODULE table holds the list and configuration of linecard and fabric modules in a SONiC chassis.
+It currently allows user to administratively bring down a line-card or fabric-card
+
+```
+{
+    "CHASSIS_MODULE": {
+        "LINE-CARD0": {
+            "admin_status": "down"
+        },
+        "FABRIC-CARD1": {
+            "admin_status": "down"
+        }
+    }
+}
+
+```
 
 ### COPP_TABLE
 
@@ -830,6 +852,22 @@ instance is supported in SONiC.
 
 ```
 
+### DHCP_RELAY
+
+```
+{
+"DHCP_RELAY": {
+    "dhcpv6_servers": [
+        "fc02:2000::1",
+        "fc02:2000::2",
+        "fc02:2000::3",
+        "fc02:2000::4"
+    ],
+    "rfc6939_support": "true",
+    "interface_id": "true"
+}
+
+```
 
 ### DSCP_TO_TC_MAP
 ```
@@ -876,17 +914,24 @@ instance is supported in SONiC.
 
 ```
 {
-"FLEX_COUNTER_TABLE": {
-    "PFCWD": {
-        "FLEX_COUNTER_STATUS": "enable"
-    },
-    "PORT": {
-        "FLEX_COUNTER_STATUS": "enable"
-    },
-    "QUEUE": {
-        "FLEX_COUNTER_STATUS": "enable"
-    }
-  }
+	"FLEX_COUNTER_TABLE": {
+		"PFCWD": {
+			"FLEX_COUNTER_STATUS": "enable",
+			"POLL_INTERVAL": "10000"
+		},
+		"PORT": {
+			"FLEX_COUNTER_STATUS": "enable",
+			"POLL_INTERVAL": "1000"
+		},
+		"QUEUE": {
+			"FLEX_COUNTER_STATUS": "enable",
+			"POLL_INTERVAL": "10000"
+		},
+		"TUNNEL": {
+			"FLEX_COUNTER_STATUS": "enable",
+			"POLL_INTERVAL": "10000"
+		}
+	}
 }
 
 ```
@@ -1226,6 +1271,33 @@ optional attributes.
     }
 }
 
+2x100G port breakout
+{
+"PORT": {
+        "Ethernet0": {
+            "admin_status": "up",
+            "index": "1",
+            "lanes": "101,102,103,104",
+            "description": "etp1a",
+            "mtu": "9100",
+            "alias": "etp1a",
+            "speed": "100000",
+            "channel": 1
+        },
+        "Ethernet4": {
+            "admin_status": "up",
+            "index": "1",
+            "lanes": "105,106,107,108",
+            "description": "etp1b",
+            "mtu": "9100",
+            "alias": "etp1b",
+            "speed": "100000",
+            "channel": 2
+        },
+    }
+}
+
+
 ```
 
 ### Port Channel
@@ -1250,7 +1322,8 @@ name as object key and member list as attribute.
         "members": [
             "Ethernet56"
         ],
-        "mtu": "9100"
+        "mtu": "9100",
+        "fallback": "false"
     }
   }
 }
@@ -1331,6 +1404,68 @@ name as object key and member list as attribute.
 }
 ```
 
+### Sflow
+
+The below are the tables and their schema for SFLOW feature
+
+SFLOW
+
+| Field            | Description                                                                             | Mandatory   | Default   | Reference                                 |
+|------------------|-----------------------------------------------------------------------------------------|-------------|-----------|-------------------------------------------|
+| admin_state      | Global sflow admin state                                                                |             | down      |                                           |
+| polling_interval | The interval within which sFlow data is collected and sent to the configured collectors |             | 20        |                                           |
+| agent_id         | Interface name                                                                          |             |           | PORT:name,PORTCHANNEL:name,MGMT_PORT:name, VLAN:name |
+
+SFLOW_SESSION
+
+key - port
+| Field       | Description                                                                                                             | Mandatory   | Default   | Reference   |
+|-------------|-------------------------------------------------------------------------------------------------------------------------|-------------|-----------|-------------|
+| port        | Sets sflow session table attributes for either all interfaces or a specific Ethernet interface.                         |             |           | PORT:name   |
+| admin_state | Per port sflow admin state                                                                                              |             | up        |             |
+| sample_rate | Sets the packet sampling rate.  The rate is expressed as an integer N, where the intended sampling rate is 1/N packets. |             |           |             |
+
+SFLOW_COLLECTOR
+
+key - name
+| Field          | Description                                                                             | Mandatory   | Default   | Reference   |
+|----------------|-----------------------------------------------------------------------------------------|-------------|-----------|-------------|
+| name           | Name of the Sflow collector                                                             |             |           |             |
+| collector_ip   | IPv4/IPv6 address of the Sflow collector                                                | true        |           |             |
+| collector_port | Destination L4 port of the Sflow collector                                              |             | 6343      |             |
+| collector_vrf  | Specify the Collector VRF. In this revision, it is either default VRF or Management VRF.|             |           |             |
+
+### Syslog Rate Limit
+
+Host side configuration:
+
+```
+{
+"SYSLOG_CONFIG": {
+    "GLOBAL": {
+        "rate_limit_interval": "300",
+        "rate_limit_burst": "20000"
+    }
+  }
+}
+```
+
+Container side configuration:
+
+```
+{
+"SYSLOG_CONFIG_FEATURE": {
+    "bgp": {
+        "rate_limit_interval": "300",
+        "rate_limit_burst": "20000"
+    },
+    "pmon": {
+        "rate_limit_interval": "300",
+        "rate_limit_burst": "20000"
+    }
+  }
+}
+```
 
 ### Tacplus Server
 
@@ -1642,6 +1777,29 @@ The method could be:
     }
 }
 ```
+
+### RADIUS
+
+The RADIUS and RADIUS_SERVER tables define RADIUS config paramerters. RADIUS table carries global configuration while RADIUS_SERVER table carries per server configuration.
+
+```
+"RADIUS": {
+    "global": {
+       "auth_type": "pap",
+       "timeout": "5"
+    }
+}
+
+"RADIUS_SERVER": {
+    "192.168.1.2": {
+       "priority": "4",
+       "retransmit": "2",
+       "timeout": "5"
+    }
+}
+
+```
+
 
 For Developers
 ==============
