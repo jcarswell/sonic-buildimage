@@ -1,0 +1,4 @@
+#Enable accton-as5822-platform services
+depmod -a
+systemctl enable as5822-platform-modules
+systemctl start as5822-platform-modules

@@ -1,0 +1,2 @@
+as5822-54x/scripts/as5822_platform.sh usr/local/bin
+as5822-54x/sonic_platform-1.0-py3-none-any.whl usr/share/sonic/device/x86_64-accton_as5822_54x-r0
