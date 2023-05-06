@@ -32,8 +32,8 @@
 #include <linux/platform_device.h>
 
 #define DRVNAME "as5822_54x_fan"
-#define FAN_STATUS_I2C_ADDR	0x60
-#define MAX_FAN_SPEED_RPM	25500
+#define FAN_STATUS_I2C_ADDR    0x60
+#define MAX_FAN_SPEED_RPM    25500
 
 static struct as5822_54x_fan_data *as5822_54x_fan_update_device(struct device *dev);                    
 static ssize_t fan_show_value(struct device *dev, struct device_attribute *da, char *buf);
@@ -45,19 +45,19 @@ extern int as5822_54x_cpld_write(unsigned short cpld_addr, u8 reg, u8 value);
 /* fan related data, the index should match sysfs_fan_attributes
  */
 static const u8 fan_reg[] = {
-    0x0C,       /* fan 1-5 present status */
-	0x0D,	    /* fan 1-5 direction(0:F2B 1:B2F) */
+    0x0C,       /* fan tray 1-5 present status */
+    0x0D,       /* fan tray 1-5 direction(0:F2B 1:B2F) */
     0x0E,       /* fan PWM(for all fan) */
-    0x0F,       /* front fan 1 speed(rpm) */
-    0x10,       /* front fan 2 speed(rpm) */
-    0x11,       /* front fan 3 speed(rpm) */
-    0x12,       /* front fan 4 speed(rpm) */
-    0x13,       /* front fan 5 speed(rpm) */
-    0x14,       /* rear fan 1 speed(rpm) */
-    0x15,       /* rear fan 2 speed(rpm) */
-    0x16,       /* rear fan 3 speed(rpm) */
-    0x17,       /* rear fan 4 speed(rpm) */
-    0x18,       /* rear fan 5 speed(rpm) */
+    0x0F,       /* fan 1 (tray 1 front) speed(rpm) */
+    0x10,       /* fan 3 (tray 2 front) speed(rpm) */
+    0x11,       /* fan 5 (tray 3 front) speed(rpm) */
+    0x12,       /* fan 7 (tray 4 front) speed(rpm) */
+    0x13,       /* fan 9 (tray 5 front) speed(rpm) */
+    0x14,       /* fan 2 (tray 1 rear) speed(rpm) */
+    0x15,       /* fan 4 (tray 2 rear) speed(rpm) */
+    0x16,       /* fan 6 (tray 3 rear) speed(rpm) */
+    0x17,       /* fan 8 (tray 4 rear) speed(rpm) */
+    0x18,       /* fan 10 (tray 5 rear) speed(rpm) */
 };
 
 /* fan data */
@@ -73,121 +73,121 @@ struct as5822_54x_fan_data {
 static struct as5822_54x_fan_data *fan_data = NULL;
 
 enum fan_id {
-    FAN1_ID,
-    FAN2_ID,
-    FAN3_ID,
-    FAN4_ID,
-    FAN5_ID
+    FANTRAY1_ID,
+    FANTRAY2_ID,
+    FANTRAY3_ID,
+    FANTRAY4_ID,
+    FANTRAY5_ID
 };
 
 enum sysfs_fan_attributes {
     FAN_PRESENT_REG,
-	FAN_DIRECTION_REG,
+    FAN_DIRECTION_REG,
     FAN_DUTY_CYCLE_PERCENTAGE, /* Only one CPLD register to control duty cycle for all fans */
-    FAN1_FRONT_SPEED_RPM,
-    FAN2_FRONT_SPEED_RPM,
-    FAN3_FRONT_SPEED_RPM,
-    FAN4_FRONT_SPEED_RPM,
-    FAN5_FRONT_SPEED_RPM,
-    FAN1_REAR_SPEED_RPM,
-    FAN2_REAR_SPEED_RPM,
-    FAN3_REAR_SPEED_RPM,
-    FAN4_REAR_SPEED_RPM,
-    FAN5_REAR_SPEED_RPM,
-	FAN1_DIRECTION,
-	FAN2_DIRECTION,
-	FAN3_DIRECTION,
-	FAN4_DIRECTION,
-	FAN5_DIRECTION,
-    FAN1_PRESENT,
-    FAN2_PRESENT,
-    FAN3_PRESENT,
-    FAN4_PRESENT,
-    FAN5_PRESENT,
-    FAN1_FAULT,
-    FAN2_FAULT,
-    FAN3_FAULT,
-    FAN4_FAULT,
-    FAN5_FAULT,
+    FAN1_SPEED_RPM,
+    FAN3_SPEED_RPM,
+    FAN5_SPEED_RPM,
+    FAN7_SPEED_RPM,
+    FAN9_SPEED_RPM,
+    FAN2_SPEED_RPM,
+    FAN4_SPEED_RPM,
+    FAN6_SPEED_RPM,
+    FAN8_SPEED_RPM,
+    FAN10_SPEED_RPM,
+    FANTRAY1_DIRECTION,
+    FANTRAY2_DIRECTION,
+    FANTRAY3_DIRECTION,
+    FANTRAY4_DIRECTION,
+    FANTRAY5_DIRECTION,
+    FANTRAY1_PRESENT,
+    FANTRAY2_PRESENT,
+    FANTRAY3_PRESENT,
+    FANTRAY4_PRESENT,
+    FANTRAY5_PRESENT,
+    FANTRAY1_FAULT,
+    FANTRAY2_FAULT,
+    FANTRAY3_FAULT,
+    FANTRAY4_FAULT,
+    FANTRAY5_FAULT,
     FAN_MAX_RPM
 };
 
 /* Define attributes
  */
-#define DECLARE_FAN_FAULT_SENSOR_DEV_ATTR(index) \
-    static SENSOR_DEVICE_ATTR(fan##index##_fault, S_IRUGO, fan_show_value, NULL, FAN##index##_FAULT)
-#define DECLARE_FAN_FAULT_ATTR(index)      &sensor_dev_attr_fan##index##_fault.dev_attr.attr
+#define DECLARE_FAN_TRAY_FAULT_SENSOR_DEV_ATTR(index) \
+    static SENSOR_DEVICE_ATTR(fantray##index##_fault, S_IRUGO, fan_show_value, NULL, FANTRAY##index##_FAULT)
+#define DECLARE_FAN_TRAY_FAULT_ATTR(index)      &sensor_dev_attr_fantray##index##_fault.dev_attr.attr
 
-#define DECLARE_FAN_DIRECTION_SENSOR_DEV_ATTR(index) \
-    static SENSOR_DEVICE_ATTR(fan##index##_direction, S_IRUGO, fan_show_value, NULL, FAN##index##_DIRECTION)
-#define DECLARE_FAN_DIRECTION_ATTR(index)  &sensor_dev_attr_fan##index##_direction.dev_attr.attr
+#define DECLARE_FAN_TRAY_DIRECTION_SENSOR_DEV_ATTR(index) \
+    static SENSOR_DEVICE_ATTR(fantray##index##_direction, S_IRUGO, fan_show_value, NULL, FANTRAY##index##_DIRECTION)
+#define DECLARE_FAN_TRAY_DIRECTION_ATTR(index)  &sensor_dev_attr_fantray##index##_direction.dev_attr.attr
 
 #define DECLARE_FAN_DUTY_CYCLE_SENSOR_DEV_ATTR(index) \
     static SENSOR_DEVICE_ATTR(fan##index##_duty_cycle_percentage, S_IWUSR | S_IRUGO, fan_show_value, set_duty_cycle, FAN##index##_DUTY_CYCLE_PERCENTAGE)
 #define DECLARE_FAN_DUTY_CYCLE_ATTR(index) &sensor_dev_attr_fan##index##_duty_cycle_percentage.dev_attr.attr
 
-#define DECLARE_FAN_PRESENT_SENSOR_DEV_ATTR(index) \
-    static SENSOR_DEVICE_ATTR(fan##index##_present, S_IRUGO, fan_show_value, NULL, FAN##index##_PRESENT)
-#define DECLARE_FAN_PRESENT_ATTR(index)      &sensor_dev_attr_fan##index##_present.dev_attr.attr
+#define DECLARE_FAN_TRAY_PRESENT_SENSOR_DEV_ATTR(index) \
+    static SENSOR_DEVICE_ATTR(fantray##index##_present, S_IRUGO, fan_show_value, NULL, FANTRAY##index##_PRESENT)
+#define DECLARE_FAN_TRAY_PRESENT_ATTR(index)      &sensor_dev_attr_fantray##index##_present.dev_attr.attr
 
 #define DECLARE_FAN_SPEED_RPM_SENSOR_DEV_ATTR(index) \
-    static SENSOR_DEVICE_ATTR(fan##index##_front_speed_rpm, S_IRUGO, fan_show_value, NULL, FAN##index##_FRONT_SPEED_RPM);\
-    static SENSOR_DEVICE_ATTR(fan##index##_rear_speed_rpm, S_IRUGO, fan_show_value, NULL, FAN##index##_REAR_SPEED_RPM)
-#define DECLARE_FAN_SPEED_RPM_ATTR(index)  &sensor_dev_attr_fan##index##_front_speed_rpm.dev_attr.attr, \
-                                           &sensor_dev_attr_fan##index##_rear_speed_rpm.dev_attr.attr
+    static SENSOR_DEVICE_ATTR(fan##index##_speed_rpm, S_IRUGO, fan_show_value, NULL, FAN##index##_SPEED_RPM)
+    /*static SENSOR_DEVICE_ATTR(fan##index##_speed_rpm, S_IRUGO, fan_show_value, NULL, FAN##index##_SPEED_RPM)*/
+#define DECLARE_FAN_SPEED_RPM_ATTR(index)  &sensor_dev_attr_fan##index##_speed_rpm.dev_attr.attr/*, \
+                                           &sensor_dev_attr_fan##index##_speed_rpm.dev_attr.attr*/
 
 static SENSOR_DEVICE_ATTR(fan_max_speed_rpm, S_IRUGO, fan_show_value, NULL, FAN_MAX_RPM);
 #define DECLARE_FAN_MAX_RPM_ATTR(index)      &sensor_dev_attr_fan_max_speed_rpm.dev_attr.attr
 
 /* 6 fan fault attributes in this platform */
-DECLARE_FAN_FAULT_SENSOR_DEV_ATTR(1);
-DECLARE_FAN_FAULT_SENSOR_DEV_ATTR(2);
-DECLARE_FAN_FAULT_SENSOR_DEV_ATTR(3);
-DECLARE_FAN_FAULT_SENSOR_DEV_ATTR(4);
-DECLARE_FAN_FAULT_SENSOR_DEV_ATTR(5); 
+DECLARE_FAN_TRAY_FAULT_SENSOR_DEV_ATTR(1);
+DECLARE_FAN_TRAY_FAULT_SENSOR_DEV_ATTR(2);
+DECLARE_FAN_TRAY_FAULT_SENSOR_DEV_ATTR(3);
+DECLARE_FAN_TRAY_FAULT_SENSOR_DEV_ATTR(4);
+DECLARE_FAN_TRAY_FAULT_SENSOR_DEV_ATTR(5); 
 /* 6 fan speed(rpm) attributes in this platform */
-DECLARE_FAN_SPEED_RPM_SENSOR_DEV_ATTR(1);
-DECLARE_FAN_SPEED_RPM_SENSOR_DEV_ATTR(2);
-DECLARE_FAN_SPEED_RPM_SENSOR_DEV_ATTR(3);
-DECLARE_FAN_SPEED_RPM_SENSOR_DEV_ATTR(4);
-DECLARE_FAN_SPEED_RPM_SENSOR_DEV_ATTR(5);
+DECLARE_FAN_TRAY_SPEED_RPM_SENSOR_DEV_ATTR(1);
+DECLARE_FAN_TRAY_SPEED_RPM_SENSOR_DEV_ATTR(2);
+DECLARE_FAN_TRAY_SPEED_RPM_SENSOR_DEV_ATTR(3);
+DECLARE_FAN_TRAY_SPEED_RPM_SENSOR_DEV_ATTR(4);
+DECLARE_FAN_TRAY_SPEED_RPM_SENSOR_DEV_ATTR(5);
 /* 6 fan present attributes in this platform */
-DECLARE_FAN_PRESENT_SENSOR_DEV_ATTR(1);
-DECLARE_FAN_PRESENT_SENSOR_DEV_ATTR(2);
-DECLARE_FAN_PRESENT_SENSOR_DEV_ATTR(3);
-DECLARE_FAN_PRESENT_SENSOR_DEV_ATTR(4);
-DECLARE_FAN_PRESENT_SENSOR_DEV_ATTR(5);
+DECLARE_FAN_TRAY_PRESENT_SENSOR_DEV_ATTR(1);
+DECLARE_FAN_TRAY_PRESENT_SENSOR_DEV_ATTR(2);
+DECLARE_FAN_TRAY_PRESENT_SENSOR_DEV_ATTR(3);
+DECLARE_FAN_TRAY_PRESENT_SENSOR_DEV_ATTR(4);
+DECLARE_FAN_TRAY_PRESENT_SENSOR_DEV_ATTR(5);
 /* 6 fan direction attribute in this platform */
-DECLARE_FAN_DIRECTION_SENSOR_DEV_ATTR(1);
-DECLARE_FAN_DIRECTION_SENSOR_DEV_ATTR(2);
-DECLARE_FAN_DIRECTION_SENSOR_DEV_ATTR(3);
-DECLARE_FAN_DIRECTION_SENSOR_DEV_ATTR(4);
-DECLARE_FAN_DIRECTION_SENSOR_DEV_ATTR(5);
+DECLARE_FAN_TRAY_DIRECTION_SENSOR_DEV_ATTR(1);
+DECLARE_FAN_TRAY_DIRECTION_SENSOR_DEV_ATTR(2);
+DECLARE_FAN_TRAY_DIRECTION_SENSOR_DEV_ATTR(3);
+DECLARE_FAN_TRAY_DIRECTION_SENSOR_DEV_ATTR(4);
+DECLARE_FAN_TRAY_DIRECTION_SENSOR_DEV_ATTR(5);
 /* 1 fan duty cycle attribute in this platform */
 DECLARE_FAN_DUTY_CYCLE_SENSOR_DEV_ATTR();
 
 static struct attribute *as5822_54x_fan_attributes[] = {
     /* fan related attributes */
-    DECLARE_FAN_FAULT_ATTR(1),
-    DECLARE_FAN_FAULT_ATTR(2),
-    DECLARE_FAN_FAULT_ATTR(3),
-    DECLARE_FAN_FAULT_ATTR(4),
-    DECLARE_FAN_FAULT_ATTR(5),
-    DECLARE_FAN_SPEED_RPM_ATTR(1),
-    DECLARE_FAN_SPEED_RPM_ATTR(2),
-    DECLARE_FAN_SPEED_RPM_ATTR(3),
-    DECLARE_FAN_SPEED_RPM_ATTR(4),
-    DECLARE_FAN_SPEED_RPM_ATTR(5),
-    DECLARE_FAN_PRESENT_ATTR(1),
-    DECLARE_FAN_PRESENT_ATTR(2),
-    DECLARE_FAN_PRESENT_ATTR(3),
-    DECLARE_FAN_PRESENT_ATTR(4),
-    DECLARE_FAN_PRESENT_ATTR(5),
-	DECLARE_FAN_DIRECTION_ATTR(1),
-	DECLARE_FAN_DIRECTION_ATTR(2),
-	DECLARE_FAN_DIRECTION_ATTR(3),
-	DECLARE_FAN_DIRECTION_ATTR(4),
-	DECLARE_FAN_DIRECTION_ATTR(5),
+    DECLARE_FAN_TRAY_FAULT_ATTR(1),
+    DECLARE_FAN_TRAY_FAULT_ATTR(2),
+    DECLARE_FAN_TRAY_FAULT_ATTR(3),
+    DECLARE_FAN_TRAY_FAULT_ATTR(4),
+    DECLARE_FAN_TRAY_FAULT_ATTR(5),
+    DECLARE_FAN_TRAY_SPEED_RPM_ATTR(1),
+    DECLARE_FAN_TRAY_SPEED_RPM_ATTR(2),
+    DECLARE_FAN_TRAY_SPEED_RPM_ATTR(3),
+    DECLARE_FAN_TRAY_SPEED_RPM_ATTR(4),
+    DECLARE_FAN_TRAY_SPEED_RPM_ATTR(5),
+    DECLARE_FAN_TRAY_PRESENT_ATTR(1),
+    DECLARE_FAN_TRAY_PRESENT_ATTR(2),
+    DECLARE_FAN_TRAY_PRESENT_ATTR(3),
+    DECLARE_FAN_TRAY_PRESENT_ATTR(4),
+    DECLARE_FAN_TRAY_PRESENT_ATTR(5),
+    DECLARE_FAN_TRAY_DIRECTION_ATTR(1),
+    DECLARE_FAN_TRAY_DIRECTION_ATTR(2),
+    DECLARE_FAN_TRAY_DIRECTION_ATTR(3),
+    DECLARE_FAN_TRAY_DIRECTION_ATTR(4),
+    DECLARE_FAN_TRAY_DIRECTION_ATTR(5),
     DECLARE_FAN_DUTY_CYCLE_ATTR(),
     DECLARE_FAN_MAX_RPM_ATTR(),
     NULL
@@ -213,19 +213,19 @@ static u32 reg_val_to_duty_cycle(u8 reg_val)
 {
     reg_val &= FAN_DUTY_CYCLE_REG_MASK;
 
-	if (reg_val == 0) {
-		return 0;
-	}
+    if (reg_val == 0) {
+        return 0;
+    }
 
     return ((u32)(reg_val+1) * 625)/ 100;
 }
 
 static u8 duty_cycle_to_reg_val(u8 duty_cycle) 
 {
-	if (duty_cycle >= FAN_MAX_DUTY_CYCLE) {
-		return 0xF;
-	}
-		
+    if (duty_cycle >= FAN_MAX_DUTY_CYCLE) {
+        return 0xF;
+    }
+        
     return ((u32)duty_cycle * 100 / 625);
 }
 
@@ -236,7 +236,7 @@ static u32 reg_val_to_speed_rpm(u8 reg_val)
 
 static u8 reg_val_to_direction(u8 reg_val, enum fan_id id)
 {
-	return !!(reg_val & BIT(id));
+    return !!(reg_val & BIT(id));
 }
 
 static u8 reg_val_to_is_present(u8 reg_val, enum fan_id id)
@@ -247,8 +247,8 @@ static u8 reg_val_to_is_present(u8 reg_val, enum fan_id id)
 static u8 is_fan_fault(struct as5822_54x_fan_data *data, enum fan_id id)
 {
     u8 ret = 1;
-    int front_fan_index = FAN1_FRONT_SPEED_RPM + id;
-    int rear_fan_index  = FAN1_REAR_SPEED_RPM  + id;
+    int front_fan_index = FAN1_SPEED_RPM + id;
+    int rear_fan_index  = FAN2_SPEED_RPM + id;
 
     /* Check if the speed of front or rear fan is ZERO,  
      */
@@ -276,14 +276,14 @@ static ssize_t set_duty_cycle(struct device *dev, struct device_attribute *da,
 
     mutex_lock(&fan_data->update_lock);
 
-	/* Disable the watchdog timer
-	 */
-	error = as5822_54x_fan_write_value(0x33, 0);
-	if (error != 0) {
-		dev_dbg(fan_data->hwmon_dev, "Unable to disable the watchdog timer\n");
-		mutex_unlock(&fan_data->update_lock);
-		return error;
-	}
+    /* Disable the watchdog timer
+     */
+    error = as5822_54x_fan_write_value(0x33, 0);
+    if (error != 0) {
+        dev_dbg(fan_data->hwmon_dev, "Unable to disable the watchdog timer\n");
+        mutex_unlock(&fan_data->update_lock);
+        return error;
+    }
 
     as5822_54x_fan_write_value(fan_reg[FAN_DUTY_CYCLE_PERCENTAGE], duty_cycle_to_reg_val(value));
     fan_data->valid = 0;
@@ -310,45 +310,45 @@ static ssize_t fan_show_value(struct device *dev, struct device_attribute *da,
                 ret = sprintf(buf, "%u\n", duty_cycle);
                 break;
             }
-            case FAN1_FRONT_SPEED_RPM:
-            case FAN2_FRONT_SPEED_RPM:
-            case FAN3_FRONT_SPEED_RPM:
-            case FAN4_FRONT_SPEED_RPM:
-            case FAN5_FRONT_SPEED_RPM:
-            case FAN1_REAR_SPEED_RPM:
-            case FAN2_REAR_SPEED_RPM:
-            case FAN3_REAR_SPEED_RPM:
-            case FAN4_REAR_SPEED_RPM:
-            case FAN5_REAR_SPEED_RPM:
+            case FAN1_SPEED_RPM:
+            case FAN2_SPEED_RPM:
+            case FAN3_SPEED_RPM:
+            case FAN4_SPEED_RPM:
+            case FAN5_SPEED_RPM:
+            case FAN6_SPEED_RPM:
+            case FAN7_SPEED_RPM:
+            case FAN8_SPEED_RPM:
+            case FAN9_SPEED_RPM:
+            case FAN10_SPEED_RPM:
                 ret = sprintf(buf, "%u\n", reg_val_to_speed_rpm(data->reg_val[attr->index]));
                 break;
-            case FAN1_PRESENT:
-            case FAN2_PRESENT:
-            case FAN3_PRESENT:
-            case FAN4_PRESENT:
-            case FAN5_PRESENT:
+            case FANTRAY1_PRESENT:
+            case FANTRAY2_PRESENT:
+            case FANTRAY3_PRESENT:
+            case FANTRAY4_PRESENT:
+            case FANTRAY5_PRESENT:
                 ret = sprintf(buf, "%d\n",
                               reg_val_to_is_present(data->reg_val[FAN_PRESENT_REG],
-                              attr->index - FAN1_PRESENT));
+                              attr->index - FANTRAY1_PRESENT));
                 break;
-            case FAN1_FAULT:
-            case FAN2_FAULT:
-            case FAN3_FAULT:
-            case FAN4_FAULT:
-            case FAN5_FAULT:
-                ret = sprintf(buf, "%d\n", is_fan_fault(data, attr->index - FAN1_FAULT));
+            case FANTRAY1_FAULT:
+            case FANTRAY2_FAULT:
+            case FANTRAY3_FAULT:
+            case FANTRAY4_FAULT:
+            case FANTRAY5_FAULT:
+                ret = sprintf(buf, "%d\n", is_fan_fault(data, attr->index - FANTRAY1_FAULT));
                 break;
-			case FAN1_DIRECTION:
-			case FAN2_DIRECTION:
-			case FAN3_DIRECTION:
-			case FAN4_DIRECTION:
-			case FAN5_DIRECTION:
-				ret = sprintf(buf, "%d\n",
-							  reg_val_to_direction(data->reg_val[FAN_DIRECTION_REG],
-							  attr->index - FAN1_DIRECTION));
-				break;
-			case FAN_MAX_RPM:
-				ret = sprintf(buf, "%d\n", MAX_FAN_SPEED_RPM);
+            case FANTRAY1_DIRECTION:
+            case FANTRAY2_DIRECTION:
+            case FANTRAY3_DIRECTION:
+            case FANTRAY4_DIRECTION:
+            case FANTRAY5_DIRECTION:
+                ret = sprintf(buf, "%d\n",
+                              reg_val_to_direction(data->reg_val[FAN_DIRECTION_REG],
+                              attr->index - FANTRAY1_DIRECTION));
+                break;
+            case FAN_MAX_RPM:
+                ret = sprintf(buf, "%d\n", MAX_FAN_SPEED_RPM);
             default:
                 break;
         }        
@@ -401,15 +401,14 @@ static int as5822_54x_fan_probe(struct platform_device *pdev)
     status = sysfs_create_group(&pdev->dev.kobj, &as5822_54x_fan_group);
     if (status) {
         goto exit;
-
     }
 
     fan_data->hwmon_dev = hwmon_device_register_with_info(&pdev->dev, "as5822_54x_fan",
-                                                      NULL, NULL, NULL);
-	if (IS_ERR(fan_data->hwmon_dev)) {
-		status = PTR_ERR(fan_data->hwmon_dev);
-		goto exit_remove;
-	}
+                                                          NULL, NULL, NULL);
+    if (IS_ERR(fan_data->hwmon_dev)) {
+        status = PTR_ERR(fan_data->hwmon_dev);
+        goto exit_remove;
+    }
 
     dev_info(&pdev->dev, "accton_as5822_54x_fan\n");
 
@@ -454,7 +453,7 @@ static int __init as5822_54x_fan_init(void)
         goto exit;
     }
 
-	mutex_init(&fan_data->update_lock);
+    mutex_init(&fan_data->update_lock);
     fan_data->valid = 0;
 
     fan_data->pdev = platform_device_register_simple(DRVNAME, -1, NULL, 0);

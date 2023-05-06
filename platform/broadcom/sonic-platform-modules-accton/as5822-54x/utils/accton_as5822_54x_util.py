@@ -337,8 +337,6 @@ def device_uninstall():
             if FORCE == 0:
                 return status
 
-    return
-
 
 def system_ready():
     if driver_check() == False:
